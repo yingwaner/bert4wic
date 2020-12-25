@@ -20,6 +20,7 @@ from __future__ import print_function
 
 import collections
 import csv
+import json
 import os
 import modeling
 import optimization
@@ -203,6 +204,21 @@ class DataProcessor(object):
         lines.append(line)
       return lines
 
+  @classmethod
+  def _read_dict(cls, train_file, dev_file, quotechar=None):
+    """Just for Wic tasks"""
+    with tf.gfile.Open(train_file, "r") as f:
+      reader = json.loads(f)
+      #for text in reader:
+      #  text['']
+    with tf.gfile.Open(dev_file, "r") as f:
+      label = json.load(f)
+
+    for i in range(len(reader)):
+      assert reader[i]['id'] == label[i]['id']
+      reader[i]['tag'] = label[i]['tag']
+    return reader
+
 
 class XnliProcessor(DataProcessor):
   """Processor for the XNLI data set."""
@@ -288,6 +304,50 @@ class MnliProcessor(DataProcessor):
         label = "contradiction"
       else:
         label = tokenization.convert_to_unicode(line[-1])
+      examples.append(
+          InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
+    return examples
+
+
+class WicProcessor(DataProcessor):
+  """Processor for the MultiNLI data set (GLUE version)."""
+
+  def get_train_examples(self, data_dir):
+    """See base class."""
+    return self._create_examples(
+        self._read_dict(os.path.join(data_dir, "training/multilingual/training.en-en.data")),
+        os.path.join(data_dir, "training/multilingual/training.en-en.gold"), 
+        "train")
+
+  def get_dev_examples(self, data_dir):
+    """See base class."""
+    return self._create_examples(
+        self._read_dict(os.path.join(data_dir, "development/multilingual/dev.en-en.data")),
+        os.path.join(data_dir, "development/multilingual/dev.en-en.gold"), 
+        "dev")
+
+  def get_test_examples(self, data_dir):
+    """See base class."""
+    return self._create_examples(
+        self._read_dict(os.path.join(data_dir, "development/multilingual/dev.en-en.data")),
+        os.path.join(data_dir, "development/multilingual/dev.en-en.gold"), 
+        "test")
+
+  def get_labels(self):
+    """See base class."""
+    return ["T", "F"]
+
+  def _create_examples(self, lines, set_type):
+    """Creates examples for the training and dev sets."""
+    examples = []
+    for (i, line) in enumerate(lines):
+      guid = "%s-%s" % (set_type, tokenization.convert_to_unicode(line['id']))
+      text_a = tokenization.convert_to_unicode(line['sentence1'])
+      text_b = tokenization.convert_to_unicode(line['sentence2'])
+      if set_type == "test":
+        label = "T"
+      else:
+        label = tokenization.convert_to_unicode(line['tag'])
       examples.append(
           InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
     return examples
