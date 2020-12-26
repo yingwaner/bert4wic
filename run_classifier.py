@@ -84,7 +84,7 @@ flags.DEFINE_integer("predict_batch_size", 8, "Total batch size for predict.")
 
 flags.DEFINE_float("learning_rate", 5e-5, "The initial learning rate for Adam.")
 
-flags.DEFINE_float("num_train_epochs", 3.0,
+flags.DEFINE_float("num_train_epochs", 5.0,
                    "Total number of training epochs to perform.")
 
 flags.DEFINE_float(
@@ -208,7 +208,7 @@ class DataProcessor(object):
   def _read_dict(cls, train_file, dev_file, quotechar=None):
     """Just for Wic tasks"""
     with tf.gfile.Open(train_file, "r") as f:
-      reader = json.loads(f)
+      reader = json.load(f)
       #for text in reader:
       #  text['']
     with tf.gfile.Open(dev_file, "r") as f:
@@ -315,22 +315,22 @@ class WicProcessor(DataProcessor):
   def get_train_examples(self, data_dir):
     """See base class."""
     return self._create_examples(
-        self._read_dict(os.path.join(data_dir, "training/multilingual/training.en-en.data")),
-        os.path.join(data_dir, "training/multilingual/training.en-en.gold"), 
+        self._read_dict(os.path.join(data_dir, "training/multilingual/training.en-en.data"),
+        os.path.join(data_dir, "training/multilingual/training.en-en.gold")), 
         "train")
 
   def get_dev_examples(self, data_dir):
     """See base class."""
     return self._create_examples(
-        self._read_dict(os.path.join(data_dir, "development/multilingual/dev.en-en.data")),
-        os.path.join(data_dir, "development/multilingual/dev.en-en.gold"), 
+        self._read_dict(os.path.join(data_dir, "development/multilingual/dev.en-en.data"),
+        os.path.join(data_dir, "development/multilingual/dev.en-en.gold")),
         "dev")
 
   def get_test_examples(self, data_dir):
     """See base class."""
     return self._create_examples(
-        self._read_dict(os.path.join(data_dir, "development/multilingual/dev.en-en.data")),
-        os.path.join(data_dir, "development/multilingual/dev.en-en.gold"), 
+        self._read_dict(os.path.join(data_dir, "development/multilingual/dev.en-en.data"),
+        os.path.join(data_dir, "development/multilingual/dev.en-en.gold")),
         "test")
 
   def get_labels(self):
@@ -341,13 +341,13 @@ class WicProcessor(DataProcessor):
     """Creates examples for the training and dev sets."""
     examples = []
     for (i, line) in enumerate(lines):
-      guid = "%s-%s" % (set_type, tokenization.convert_to_unicode(line['id']))
+      guid = "%s-%s" % (set_type, i)
       text_a = tokenization.convert_to_unicode(line['sentence1'])
       text_b = tokenization.convert_to_unicode(line['sentence2'])
-      if set_type == "test":
-        label = "T"
-      else:
-        label = tokenization.convert_to_unicode(line['tag'])
+      #if set_type == "test":
+      #  label = "T"
+      #else:
+      label = tokenization.convert_to_unicode(line['tag'])
       examples.append(
           InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
     return examples
