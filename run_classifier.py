@@ -128,7 +128,7 @@ flags.DEFINE_integer(
 class InputExample(object):
   """A single training/test example for simple sequence classification."""
 
-  def __init__(self, guid, text_a, text_b=None, label=None):
+  def __init__(self, guid, pos, text_a, text_b=None, label=None):
     """Constructs a InputExample.
 
     Args:
@@ -144,6 +144,7 @@ class InputExample(object):
     self.text_a = text_a
     self.text_b = text_b
     self.label = label
+    self.pos = pos
 
 
 class PaddingInputExample(object):
@@ -348,8 +349,9 @@ class WicProcessor(DataProcessor):
       #  label = "T"
       #else:
       label = tokenization.convert_to_unicode(line['tag'])
+      position = [int(line['start1']), int(line['end1']), int(line['start2']), int(line['end2'])]
       examples.append(
-          InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
+          InputExample(guid=guid, pos=position, text_a=text_a, text_b=text_b, label=label))
     return examples
 
 
@@ -454,6 +456,7 @@ def convert_single_example(ex_index, example, label_list, max_seq_length,
   tokens_b = None
   if example.text_b:
     tokens_b = tokenizer.tokenize(example.text_b)
+  pos = example.pos
 
   if tokens_b:
     # Modifies `tokens_a` and `tokens_b` in place so that the total
@@ -496,9 +499,12 @@ def convert_single_example(ex_index, example, label_list, max_seq_length,
   if tokens_b:
     for token in tokens_b:
       tokens.append(token)
-      segment_ids.append(1)
+      segment_ids.append(0)
     tokens.append("[SEP]")
-    segment_ids.append(1)
+    segment_ids.append(0)
+
+  segment_ids[pos[0]:pos[1]]=[1 for i in range(pos[1]-pos[0])]
+  segment_ids[pos[2]:pos[3]]=[1 for i in range(pos[1]-pos[0])]
 
   input_ids = tokenizer.convert_tokens_to_ids(tokens)
 
